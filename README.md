@@ -69,12 +69,16 @@ LOG_LEVEL=INFO
 ```
 
 ## Основные API-ручки
-- `GET /health`
-- `GET /livez`
-- `GET /service-info`
-- `POST /v1/chat/completions`
-- `POST /deployments/{deployment_id}/proxy/{path:path}`
-- `POST /routes/{alias}/proxy/{path:path}`
+
+| Метод | Ручка | Кто использует | Назначение |
+|--------|-------|----------------|------------|
+| `GET` | `/health` | Ingress, мониторинг | Проверяет доступность gateway для клиентского инференса. |
+| `GET` | `/livez` | Kubernetes | Liveness probe контейнера. |
+| `GET` | `/service-info` | Frontend, state facade | Возвращает служебную информацию об inference gateway. |
+| `POST` | `/v1/chat/completions` | Inference clients | OpenAI-compatible ручка для chat-completions запросов. |
+| `POST` | `/v1/completions` | Inference clients | OpenAI-compatible ручка для completions запросов. |
+| `POST` | `/deployments/{deployment_id}/proxy/{upstream_path:path}` | Frontend, технические клиенты | Проксирует запрос напрямую в конкретное LLM-развертывание. |
+| `POST` | `/traffic-routes/{alias}/proxy/{upstream_path:path}` | Inference clients | Проксирует запрос через логический маршрут с учетом весов трафика. |
 
 ## Сборка и запуск в Docker
 

@@ -1,7 +1,5 @@
 # Inference Gateway
 
-[HSE-LLM-PROJECT-2026/inference_gateway](https://github.com/HSE-LLM-PROJECT-2026/inference_gateway)
-
 ## Описание
 
 FastAPI gateway для OpenAI-compatible инференса. В целевой архитектуре именно сюда приходят пользовательские запросы инференса, а сервис уже применяет маршрутизацию, квоты, учет стоимости и проверки доступа.

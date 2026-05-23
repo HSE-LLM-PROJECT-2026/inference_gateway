@@ -1,52 +1,87 @@
 # Inference Gateway
 
+[HSE-LLM-PROJECT-2026/inference_gateway](https://github.com/HSE-LLM-PROJECT-2026/inference_gateway)
+
 ## Описание
 
-OpenAI-совместимый gateway для inference-запросов и proxy-вызовов в deployment/route-бекенды.
+FastAPI gateway для OpenAI-compatible инференса. В целевой архитектуре именно сюда приходят пользовательские запросы инференса, а сервис уже применяет маршрутизацию, квоты, учет стоимости и проверки доступа.
 
 ## Основные возможности
 
-- OpenAI-compatible точки входа
-- proxy в deployment endpoint
-- proxy в route endpoint
+- OpenAI-compatible chat/completions endpoint
+- proxy-запросы к конкретному deployment
+- proxy-запросы через логический traffic route
+- единая точка входа для клиентов инференса
+- служебные health/livez/service-info ручки
+
+## Основные API-ручки
+
+- `/v1/chat/completions`
+- `/v1/completions`
+- `/deployments/{deployment_id}/proxy/{upstream_path}`
+- `/traffic-routes/{alias}/proxy/{upstream_path}`
 
 ## Структура проекта
 
-- `app/` - код сервиса (FastAPI, config, domain handlers)
-- `deploy/` - служебные файлы для роли сервиса в деплое
-- `pyproject.toml` - зависимости и метаданные проекта
-- `Dockerfile` - сборка контейнера
-- `.env.example` - пример переменных окружения
+- `app/` — код FastAPI-сервиса
+- `app/main.py` — HTTP API и базовая service runtime логика
+- `app/config.py` — настройки сервиса через переменные окружения
+- `deploy/` — файлы для раскатки сервиса
+- `Dockerfile` — сборка контейнера
+- `pyproject.toml`, `uv.lock` — зависимости Python
+- `.env.example` — пример конфигурации
 
-## Быстрый старт (локально)
+## Быстрый старт локально
 
 1. Установить зависимости:
-   `uv sync --frozen --extra dev`
+   ```bash
+   uv sync --frozen
+   ```
+
 2. Запустить сервис:
-   `uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`
-3. Проверить health:
-   `curl http://127.0.0.1:8000/health`
+   ```bash
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+3. Проверить, что сервис живой:
+   ```bash
+   curl http://localhost:8000/health
+   ```
 
 ## Переменные окружения
 
-- `SERVICE_ROLE` - роль сервиса в control plane
-- `SERVICE_NAME` - техническое имя сервиса
-- `POSTGRES_DSN` - строка подключения к PostgreSQL
-- `PROMETHEUS_BASE_URL` - адрес Prometheus
-- `SERVICE_TO_SERVICE_URLS_JSON` - карта внутренних URL сервисов
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — подключение к PostgreSQL
+- `K8S_NAMESPACE` — namespace платформы в Kubernetes
+- `SECURITY_AUDIT_BASE_URL` — адрес security/audit service
+- `SECURITY_AUDIT_SERVICE_TOKEN` — service-to-service токен
+- `STATUS_PROMETHEUS_BASE_URL` — адрес Prometheus для сервисов, которым нужны метрики
+- `IMAGE_REPOSITORY`, `IMAGE_TAG`, `RELEASE_NAME`, `KUBECONFIG_PATH` — параметры deploy-скриптов
+
+Полный пример лежит в `.env.example`.
 
 ## Docker
 
-- Сборка: `docker build -t inference_gateway:local .`
-- Запуск: `docker run --rm -p 8000:8000 --env-file .env inference_gateway:local`
+```bash
+docker build -t awesomecosmonaut/inference_gateway:latest .
+docker run --env-file .env -p 8000:8000 awesomecosmonaut/inference_gateway:latest
+```
 
 ## Деплой
 
-Файлы для деплоя лежат в `deploy/`.
+Файлы для раскатки лежат в `deploy/`.
 
-## Основные API ручки
+```bash
+cd deploy
+./deploy-from-scratch.sh
+```
 
-- `POST /v1/chat/completions`
-- `POST /v1/completions`
-- `POST /deployments/{deployment_id}/proxy/{upstream_path}`
-- `POST /traffic-routes/{alias}/proxy/{upstream_path}`
+Если нужно пересобрать образ и полностью переустановить сервис:
+
+```bash
+cd deploy
+./rebuild-delete-deploy.sh
+```
+
+## Автор
+
+Igor Malysh
